@@ -2,8 +2,12 @@ import math
 import numpy
 from stl import mesh
 import stl
+import os
 objects_path = 'tests/stl_binary/'
 
+bodies = []
+for file in os.listdir(objects_path):
+    bodies.append(mesh.Mesh.from_file(objects_path + str(file)))
 
 """cube = mesh.Mesh.from_file(str(objects_path) + "cube.stl")
 volume, cog, inertia = cube.get_mass_properties()
@@ -14,14 +18,17 @@ print(cube.x.min())"""
 
 # find the max dimensions, so we can know the bounding box, getting the height,
 # width, length (because these are the step size)...
-def find_mins_maxs(obj):
+def get_outer_cube(obj):
     minx = obj.x.min()
     maxx = obj.x.max()
     miny = obj.y.min()
     maxy = obj.y.max()
     minz = obj.z.min()
     maxz = obj.z.max()
-    return minx, maxx, miny, maxy, minz, maxz
+    w1 = maxx - minx
+    l1 = maxy - miny
+    h1 = maxz - minz
+    return w1, l1, h1
 
 
 def translate(_solid, step, padding, multiplier, axis):
@@ -60,28 +67,38 @@ def copy_obj(obj, dims, num_rows, num_cols, num_layers):
     return copies
 
 
+def combine_objects(obj1, obj2, output_f='result.stl'):
+    combined = mesh.Mesh(numpy.concatenate([obj1.data, obj2.data]))
+
+    combined.save(output_f, mode=stl.Mode.BINARY)
+
+
+def distance(obj1, obj2):
+    x1 = obj1.x.min()
+    x2 = obj2.x.min()
+    y1 = obj1.y.min()
+    y2 = obj2.y.min()
+    z1 = obj1.z.min()
+    z2 = obj2.z.min()
+    return math.sqrt((x2 - x1)**2 + (y2 - y1)**2 + (z2 - z1)**2)
+
+
+def distance_x(obj1, obj2):
+    return math.fabs(obj2.x.min() - obj1.x.min())
+
+
+def arrange_cubes(obj1, obj2):
+    # obj2 will be stacked around obj1
+    cube1 = get_outer_cube(obj1)
+    cube2 = get_outer_cube(obj2)
+    d = distance(obj1, obj2)
+    obj2.x += d
+
+
 # Using an existing stl file:
 main_body = mesh.Mesh.from_file(objects_path + 'oriented.stl')
 
 # rotate along Y
 main_body.rotate([0.0, 0.5, 0.0], math.radians(90))
 
-minx, maxx, miny, maxy, minz, maxz = find_mins_maxs(main_body)
-w1 = maxx - minx
-l1 = maxy - miny
-h1 = maxz - minz
-copies = copy_obj(main_body, (w1, l1, h1), 2, 2, 2)
-
-# I wanted to add another related STL to the final STL
-twist_lock = mesh.Mesh.from_file(objects_path + 'cone.stl')
-minx, maxx, miny, maxy, minz, maxz = find_mins_maxs(twist_lock)
-w2 = maxx - minx
-l2 = maxy - miny
-h2 = maxz - minz
-translate(twist_lock, w1, w1 / 10., 3, 'x')
-copies2 = copy_obj(twist_lock, (w2, l2, h2), 2, 2, 1)
-combined = mesh.Mesh(numpy.concatenate([main_body.data, twist_lock.data] +
-                                    [copy.data for copy in copies] +
-                                    [copy.data for copy in copies2]))
-
-combined.save('result.stl', mode=stl.Mode.BINARY)  # save as BINARY
+copies = copy_obj(main_body, get_outer_cube(main_body), 2, 2, 2)

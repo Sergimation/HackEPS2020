@@ -6,24 +6,33 @@ import obj_actions
 from abc import ABC
 
 import numpy as np
-
+import os
+import object_3d
+from stl import mesh
 from tf_agents.environments import py_environment
 from tf_agents.specs import array_spec
 
 from tf_agents.trajectories import time_step as ts
 
+objects_path = 'tests/stl_binary/'
+cube_limit = 380 * 280 * 380
+
 
 class VolumeFitterEnv(py_environment.PyEnvironment, ABC):
 
     def __init__(self):
+        self.to_arrange = []
+        for object_path in os.listdir(objects_path):
+            self.to_arrange.append(object_3d.Object(mesh.Mesh.from_file(objects_path + str(object_path))))
+
+        self.arranged = self.to_arrange.pop()
+
         self._action_spec = array_spec.BoundedArraySpec(
             shape=(), dtype=np.int32, minimum=0, maximum=3, name='action')
         self._observation_spec = array_spec.BoundedArraySpec(
             shape=(1,), dtype=np.int32, minimum=0, name='observation')
         self._state = 0
         self._episode_ended = False
-        self.objects = obj_actions.bodies
-        self.done = self.objects.pop()
 
     def action_spec(self):
         return self._action_spec
@@ -49,12 +58,12 @@ class VolumeFitterEnv(py_environment.PyEnvironment, ABC):
         # Arrange one object
         elif action == 1:
             body = obj_actions.bodies.pop()
-            for _ in range(6):
-                obj_actions.arrange_cubes(done, body)
-                get_outter_box
-            self._state += new_card
+           # for _ in range(6):
+           #     obj_actions.arrange_cubes(done, body)
+           #     get_outter_box
+            #self._state += new_card
         # Save changes
-        elif action == 2:
+        #elif action == 2:
 
         else:
             raise ValueError('`action` should be 0, 1 or 2.')

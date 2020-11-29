@@ -18,7 +18,7 @@ class objectDictionary():
                 curr_obj["Y"] = obj.mesh.y.max() - obj.mesh.y.min()
                 curr_obj["Z"] = obj.mesh.z.max() - obj.mesh.z.min()
                 curr_obj["Volume"]=list[0]*list[1]*list[2]
-                objects[filename]=curr_obj
+                self.objects[filename]=curr_obj
 
 
     def sortByVolume(self):
@@ -33,9 +33,19 @@ class objectDictionary():
     def sortByZ(self):
         return OrderedDict(sorted(self.objects.items(), key=lambda x: getitem(x[1], 'Volume')))
 
+    def getMaxZ(self):
+        max["Z"]=0
+        for obj in self.objects:
+            if self.objects[obj]["Z"] > max["Z"]:
+                max=self.objects[obj]
+        return max
 
-
-
-
-
-
+"""    def pairByZ(self):
+        max = self.objects.getMaxZ()
+        for obj in reversed(self.objects):
+            if obj == self.objects[obj]:
+               break
+            else:
+                for ppair in self.objects:
+                    if self.objects[obj]["Z"]+self.objects[ppair]["Z"] < max["Z"]:
+                        return {obj, ppair}"""
